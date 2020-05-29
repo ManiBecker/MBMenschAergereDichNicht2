@@ -12,6 +12,16 @@ Begin VB.Form frmMain
    ScaleMode       =   3  'Pixel
    ScaleWidth      =   414
    StartUpPosition =   3  'Windows-Standard
+   Begin VB.Shape shpStart 
+      BackColor       =   &H00C0FFC0&
+      BackStyle       =   1  'Undurchsichtig
+      Height          =   495
+      Index           =   0
+      Left            =   3300
+      Shape           =   3  'Kreis
+      Top             =   780
+      Width           =   495
+   End
    Begin VB.Shape shpFeld 
       BackColor       =   &H00FFFFFF&
       BorderColor     =   &H000000FF&
@@ -56,13 +66,18 @@ Option Explicit
 Dim BmpWidth!, BmpHeight!, BmpDiv!
 Dim ImgWidth!, ImgHeight!, ImgTop!, ImgLeft!
 Dim FrmWidth!, FrmHeight!
-Dim dx!, dy!
+Dim dx!, dy!, bw!
 Dim mdX!, mdY!
 Dim mdLeft!
 Dim dXStart!, dYStart!
 Dim fx!
-Dim mx(41) As Integer
-Dim my(41) As Integer
+Dim mfx(55) As Integer
+Dim mfy(55) As Integer
+Dim msx(15) As Integer
+Dim msy(15) As Integer
+
+Dim spielerColorStr(4) As String
+Dim spielerColor(4) As Long
 
 Dim bBitmapFound As Boolean
 Dim bResize As Boolean
@@ -93,8 +108,8 @@ On Error GoTo ErrorHandler
     
     'zuerst Bitmap laden...
     bBitmapFound = True
-    ImageBackground.Picture = LoadPicture("img_background.jpg")
-    'bBitmapFound = False
+    'ImageBackground.Picture = Nothing 'LoadPicture("img_background.jpg")
+    bBitmapFound = False
     
     If bBitmapFound Then
         'nun Orginalgrösse der Bitmap ermitteln...
@@ -104,10 +119,10 @@ On Error GoTo ErrorHandler
         AutoRedraw = False
         DrawMode = vbXorPen
     Else
-        BmpWidth = 2000
-        BmpHeight = 2000
+        BmpWidth = 133
+        BmpHeight = 133
         BmpDiv = BmpHeight / BmpWidth
-        AutoRedraw = True
+        AutoRedraw = False
         DrawMode = vbXorPen
     End If
     
@@ -117,61 +132,165 @@ On Error GoTo ErrorHandler
     FrmWidth = 0
     FrmHeight = 0
     
-    mx(0) = 6: my(0) = 0
-    mx(1) = 6: my(1) = 1
-    mx(2) = 6: my(2) = 2
-    mx(3) = 6: my(3) = 3
-    mx(4) = 6: my(4) = 4
-    mx(5) = 7: my(5) = 4
-    mx(6) = 8: my(6) = 4
-    mx(7) = 9: my(7) = 4
-    mx(8) = 10: my(8) = 4
-    mx(9) = 10: my(9) = 5
-    mx(10) = 10: my(10) = 6
-    mx(11) = 9: my(11) = 6
-    mx(12) = 8: my(12) = 6
-    mx(13) = 7: my(13) = 6
-    mx(14) = 6: my(14) = 6
-    mx(15) = 6: my(15) = 7
-    mx(16) = 6: my(16) = 8
-    mx(17) = 6: my(17) = 9
-    mx(18) = 6: my(18) = 10
-    mx(19) = 5: my(19) = 10
-    mx(20) = 4: my(20) = 10
-    mx(21) = 4: my(21) = 9
-    mx(22) = 4: my(22) = 8
-    mx(23) = 4: my(23) = 7
-    mx(24) = 4: my(24) = 6
-    mx(25) = 3: my(25) = 6
-    mx(26) = 2: my(26) = 6
-    mx(27) = 1: my(27) = 6
-    mx(28) = 0: my(28) = 6
-    mx(29) = 0: my(29) = 5
-    mx(30) = 0: my(30) = 4
-    mx(31) = 1: my(31) = 4
-    mx(32) = 2: my(32) = 4
-    mx(33) = 3: my(33) = 4
-    mx(34) = 4: my(34) = 4
-    mx(35) = 4: my(35) = 3
-    mx(36) = 4: my(36) = 2
-    mx(37) = 4: my(37) = 1
-    mx(38) = 4: my(38) = 0
-    mx(39) = 5: my(39) = 0
+    'Matrix Koordinaten der Spielfeldpunkte 0 bis 39
+    mfx(0) = 6: mfy(0) = 0
+    mfx(1) = 6: mfy(1) = 1
+    mfx(2) = 6: mfy(2) = 2
+    mfx(3) = 6: mfy(3) = 3
+    mfx(4) = 6: mfy(4) = 4
+    mfx(5) = 7: mfy(5) = 4
+    mfx(6) = 8: mfy(6) = 4
+    mfx(7) = 9: mfy(7) = 4
+    mfx(8) = 10: mfy(8) = 4
+    mfx(9) = 10: mfy(9) = 5
+    mfx(10) = 10: mfy(10) = 6
+    mfx(11) = 9: mfy(11) = 6
+    mfx(12) = 8: mfy(12) = 6
+    mfx(13) = 7: mfy(13) = 6
+    mfx(14) = 6: mfy(14) = 6
+    mfx(15) = 6: mfy(15) = 7
+    mfx(16) = 6: mfy(16) = 8
+    mfx(17) = 6: mfy(17) = 9
+    mfx(18) = 6: mfy(18) = 10
+    mfx(19) = 5: mfy(19) = 10
+    mfx(20) = 4: mfy(20) = 10
+    mfx(21) = 4: mfy(21) = 9
+    mfx(22) = 4: mfy(22) = 8
+    mfx(23) = 4: mfy(23) = 7
+    mfx(24) = 4: mfy(24) = 6
+    mfx(25) = 3: mfy(25) = 6
+    mfx(26) = 2: mfy(26) = 6
+    mfx(27) = 1: mfy(27) = 6
+    mfx(28) = 0: mfy(28) = 6
+    mfx(29) = 0: mfy(29) = 5
+    mfx(30) = 0: mfy(30) = 4
+    mfx(31) = 1: mfy(31) = 4
+    mfx(32) = 2: mfy(32) = 4
+    mfx(33) = 3: mfy(33) = 4
+    mfx(34) = 4: mfy(34) = 4
+    mfx(35) = 4: mfy(35) = 3
+    mfx(36) = 4: mfy(36) = 2
+    mfx(37) = 4: mfy(37) = 1
+    mfx(38) = 4: mfy(38) = 0
+    mfx(39) = 5: mfy(39) = 0
+    'Matrix Koordinaten der grünen Zielpunkte
+    mfx(40) = 5: mfy(40) = 1
+    mfx(41) = 5: mfy(41) = 2
+    mfx(42) = 5: mfy(42) = 3
+    mfx(43) = 5: mfy(43) = 4
+    'Matrix Koordinaten der roten Zielpunkte
+    mfx(44) = 9: mfy(44) = 5
+    mfx(45) = 8: mfy(45) = 5
+    mfx(46) = 7: mfy(46) = 5
+    mfx(47) = 6: mfy(47) = 5
+    'Matrix Koordinaten der schwarzen Zielpunkte
+    mfx(48) = 5: mfy(48) = 9
+    mfx(49) = 5: mfy(49) = 8
+    mfx(50) = 5: mfy(50) = 7
+    mfx(51) = 5: mfy(51) = 6
+    'Matrix Koordinaten der gelben Zielpunkte
+    mfx(52) = 1: mfy(52) = 5
+    mfx(53) = 2: mfy(53) = 5
+    mfx(54) = 3: mfy(54) = 5
+    mfx(55) = 4: mfy(55) = 5
+    'Matrix Koordinaten der grünen Startpunkte
+    msx(0) = 9: msy(0) = 0
+    msx(1) = 10: msy(1) = 0
+    msx(2) = 9: msy(2) = 1
+    msx(3) = 10: msy(3) = 1
+    'Matrix Koordinaten der roten Startpunkte
+    msx(4) = 9: msy(4) = 9
+    msx(5) = 10: msy(5) = 9
+    msx(6) = 9: msy(6) = 10
+    msx(7) = 10: msy(7) = 10
+    'Matrix Koordinaten der schwarzen Startpunkte
+    msx(8) = 0: msy(8) = 9
+    msx(9) = 1: msy(9) = 9
+    msx(10) = 0: msy(10) = 10
+    msx(11) = 1: msy(11) = 10
+    'Matrix Koordinaten der gelben Startpunkte
+    msx(12) = 0: msy(12) = 0
+    msx(13) = 1: msy(13) = 0
+    msx(14) = 0: msy(14) = 1
+    msx(15) = 1: msy(15) = 1
     
-    Dim i As Integer
+    
+    spielerColorStr(0) = "Grün"
+    spielerColorStr(1) = "Rot"
+    spielerColorStr(2) = "Schwarz"
+    spielerColorStr(3) = "Gelb"
+    spielerColor(0) = vbGreen '&HFF00&
+    spielerColor(1) = vbRed '&HFF&
+    spielerColor(2) = vbBlack '&H0&
+    spielerColor(3) = vbYellow '&HFFFF&
+
+    
+    Dim i, j As Integer
     
     For i = 0 To 39
         If i > 0 Then Load shpFeld(i)
         With shpFeld(i)
             .Visible = True
-            .BackStyle = 0
             .BorderStyle = 1
             .FillStyle = 1
             .BorderColor = vbBlack
             .ZOrder 0
+            If bBitmapFound Then
+                .BackStyle = 0
+            Else
+                .BackStyle = 1
+                If i = 0 Then
+                    .BackColor = spielerColor(0)
+                ElseIf i = 10 Then
+                    .BackColor = spielerColor(1)
+                ElseIf i = 20 Then
+                    .BackColor = spielerColor(2)
+                ElseIf i = 30 Then
+                    .BackColor = spielerColor(3)
+                Else
+                    .BackColor = vbWhite
+                End If
+            End If
         End With
     Next i
 
+    For j = 0 To 3
+    For i = i To i + 3
+        Load shpFeld(i)
+        With shpFeld(i)
+            .Visible = True
+            .BorderStyle = 1
+            .FillStyle = 1
+            .ZOrder 0
+            If bBitmapFound Then
+                .BackStyle = 0
+            Else
+                .BackStyle = 1
+                .BackColor = spielerColor(j)
+            End If
+        End With
+    Next i
+    Next j
+    
+    i = 0
+    For j = 0 To 3
+    For i = i To i + 3
+        If i > 0 Then Load shpStart(i)
+        With shpStart(i)
+            .Visible = True
+            .BorderStyle = 1
+            .FillStyle = 1
+            .ZOrder 0
+            If bBitmapFound Then
+                .BackStyle = 0
+            Else
+                .BackStyle = 1
+                .BackColor = spielerColor(j)
+            End If
+        End With
+    Next i
+    Next j
+    
     
     Exit Sub
     
@@ -221,9 +340,6 @@ Private Sub Form_Resize()
     ImageBackground.Width = ImgWidth
     ImageBackground.Height = ImgHeight
     
-    'nun noch die Höhe der Form anpassen...
-'    Me.Height = Screen.TwipsPerPixelY * ImageBackground.Height + 400
-    
     'Abmessungen der Form sichern...
     FrmWidth = Me.Width
     FrmHeight = Me.Height
@@ -231,18 +347,33 @@ Private Sub Form_Resize()
     dx = ImgWidth / BmpWidth
     dy = ImgHeight / BmpHeight
     
-    For i = 0 To shpFeld.Count - 1
-        shpFeld(i).Left = ImgLeft + dx * 8 + dx * mx(i) * 10.9
-        shpFeld(i).Top = ImgTop + dy * 8 + dy * my(i) * 10.9
-        shpFeld(i).Width = dx * 8.5
-        shpFeld(i).Height = dy * 8.5
-        If dx > 2 Then
-            shpFeld(i).BorderWidth = dx / 2
+    If dx > 2 Then
+        bw = dx / 2
+    Else
+        bw = 1
+    End If
+    For i = 0 To 55
+        If i < 40 Then
+            shpFeld(i).Left = ImgLeft + dx * 8 + dx * mfx(i) * 10.9
+            shpFeld(i).Top = ImgTop + dy * 8 + dy * mfy(i) * 10.9
+            shpFeld(i).Width = dx * 8.5
+            shpFeld(i).Height = dy * 8.5
+            shpFeld(i).BorderWidth = bw
         Else
-            shpFeld(i).BorderWidth = 1
+            shpFeld(i).Left = ImgLeft + dx * 8 + dx * mfx(i) * 10.9 + dx
+            shpFeld(i).Top = ImgTop + dy * 8 + dy * mfy(i) * 10.9 + dy
+            shpFeld(i).Width = dx * 6.5
+            shpFeld(i).Height = dy * 6.5
+            shpFeld(i).BorderWidth = bw
+        End If
+        If i < 16 Then
+            shpStart(i).Left = ImgLeft + dx * 8 + dx * msx(i) * 10.9 + dx
+            shpStart(i).Top = ImgTop + dy * 8 + dy * msy(i) * 10.9 + dy
+            shpStart(i).Width = dx * 6.5
+            shpStart(i).Height = dy * 6.5
+            shpStart(i).BorderWidth = bw
         End If
     Next i
-    Me.Caption = dx & "/" & dy
     
 '    Label1.Left = 150 * dx * fx
 '    Label1.Top = 130 * dy * fx
