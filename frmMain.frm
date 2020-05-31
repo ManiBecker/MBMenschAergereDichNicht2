@@ -12,6 +12,18 @@ Begin VB.Form frmMain
    ScaleMode       =   3  'Pixel
    ScaleWidth      =   414
    StartUpPosition =   3  'Windows-Standard
+   Begin VB.Shape shpSpieler 
+      BackColor       =   &H0000FF00&
+      BackStyle       =   1  'Undurchsichtig
+      BorderColor     =   &H0000C000&
+      BorderWidth     =   2
+      Height          =   375
+      Index           =   0
+      Left            =   4200
+      Shape           =   3  'Kreis
+      Top             =   840
+      Width           =   375
+   End
    Begin VB.Shape shpStart 
       BackColor       =   &H00C0FFC0&
       BackStyle       =   1  'Undurchsichtig
@@ -75,14 +87,28 @@ Dim mfx(55) As Integer
 Dim mfy(55) As Integer
 Dim msx(15) As Integer
 Dim msy(15) As Integer
+Dim mpx(15) As Integer
+Dim mpy(15) As Integer
 
-Dim spielerColorStr(4) As String
-Dim spielerColor(4) As Long
+Dim colorPlayerName(4) As String
+Dim colorPlayer(4) As Long
+Dim colorStartField(4) As Long
+Dim colorTargetField(4) As Long
+Const vbLightGreen As Long = &HC0FFC0
+Const vbLightRed As Long = &HC0C0FF
+Const vbLightBlack As Long = &HC0C0C0
+Const vbLightYellow As Long = &HC0FFFF
 
 Dim bBitmapFound As Boolean
 Dim bResize As Boolean
 Dim bMove As Boolean
 Dim bClick As Boolean
+Public Enum enmGameStatus
+    Initial
+    Running
+    Stopped
+End Enum
+Dim Gamestatus As enmGameStatus
 
 Private Sub RePaint()
     Dim n%
@@ -102,6 +128,8 @@ End Sub
 Private Sub Form_Load()
 
 On Error GoTo ErrorHandler
+
+    Gamestatus = enmGameStatus.Initial
 
     'Maßeinheit auf Pixel einstellen
     Me.ScaleMode = vbPixels
@@ -213,20 +241,49 @@ On Error GoTo ErrorHandler
     msx(13) = 1: msy(13) = 0
     msx(14) = 0: msy(14) = 1
     msx(15) = 1: msy(15) = 1
+    'Matrix Koordinaten der grünen Spieler
+    mpx(0) = 9: mpy(0) = 0
+    mpx(1) = 10: mpy(1) = 0
+    mpx(2) = 9: mpy(2) = 1
+    mpx(3) = 10: mpy(3) = 1
+    'Matrix Koordinaten der roten Spieler
+    mpx(4) = 9: mpy(4) = 9
+    mpx(5) = 10: mpy(5) = 9
+    mpx(6) = 9: mpy(6) = 10
+    mpx(7) = 10: mpy(7) = 10
+    'Matrix Koordinaten der schwarzen Spieler
+    mpx(8) = 0: mpy(8) = 9
+    mpx(9) = 1: mpy(9) = 9
+    mpx(10) = 0: mpy(10) = 10
+    mpx(11) = 1: mpy(11) = 10
+    'Matrix Koordinaten der gelben Spieler
+    mpx(12) = 0: mpy(12) = 0
+    mpx(13) = 1: mpy(13) = 0
+    mpx(14) = 0: mpy(14) = 1
+    mpx(15) = 1: mpy(15) = 1
     
     
-    spielerColorStr(0) = "Grün"
-    spielerColorStr(1) = "Rot"
-    spielerColorStr(2) = "Schwarz"
-    spielerColorStr(3) = "Gelb"
-    spielerColor(0) = vbGreen '&HFF00&
-    spielerColor(1) = vbRed '&HFF&
-    spielerColor(2) = vbBlack '&H0&
-    spielerColor(3) = vbYellow '&HFFFF&
+    colorPlayerName(0) = "Grün"
+    colorPlayerName(1) = "Rot"
+    colorPlayerName(2) = "Schwarz"
+    colorPlayerName(3) = "Gelb"
+    colorPlayer(0) = vbGreen
+    colorPlayer(1) = vbRed
+    colorPlayer(2) = vbBlack
+    colorPlayer(3) = vbYellow
+    colorStartField(0) = vbLightGreen
+    colorStartField(1) = vbLightRed
+    colorStartField(2) = vbLightBlack
+    colorStartField(3) = vbLightYellow
+    colorTargetField(0) = vbLightGreen
+    colorTargetField(1) = vbLightRed
+    colorTargetField(2) = vbLightBlack
+    colorTargetField(3) = vbLightYellow
 
     
     Dim i, j As Integer
     
+    'Spielfelder
     For i = 0 To 39
         If i > 0 Then Load shpFeld(i)
         With shpFeld(i)
@@ -240,13 +297,13 @@ On Error GoTo ErrorHandler
             Else
                 .BackStyle = 1
                 If i = 0 Then
-                    .BackColor = spielerColor(0)
+                    .BackColor = colorTargetField(0)
                 ElseIf i = 10 Then
-                    .BackColor = spielerColor(1)
+                    .BackColor = colorTargetField(1)
                 ElseIf i = 20 Then
-                    .BackColor = spielerColor(2)
+                    .BackColor = colorTargetField(2)
                 ElseIf i = 30 Then
-                    .BackColor = spielerColor(3)
+                    .BackColor = colorTargetField(3)
                 Else
                     .BackColor = vbWhite
                 End If
@@ -254,6 +311,7 @@ On Error GoTo ErrorHandler
         End With
     Next i
 
+    'Zielfelder
     For j = 0 To 3
     For i = i To i + 3
         Load shpFeld(i)
@@ -266,12 +324,13 @@ On Error GoTo ErrorHandler
                 .BackStyle = 0
             Else
                 .BackStyle = 1
-                .BackColor = spielerColor(j)
+                .BackColor = colorTargetField(j)
             End If
         End With
     Next i
     Next j
     
+    'Startfelder
     i = 0
     For j = 0 To 3
     For i = i To i + 3
@@ -285,12 +344,27 @@ On Error GoTo ErrorHandler
                 .BackStyle = 0
             Else
                 .BackStyle = 1
-                .BackColor = spielerColor(j)
+                .BackColor = colorStartField(j)
             End If
         End With
     Next i
     Next j
     
+    'Spieler
+    i = 0
+    For j = 0 To 3
+    For i = i To i + 3
+        If i > 0 Then Load shpSpieler(i)
+        With shpSpieler(i)
+            .Visible = True
+            .BorderStyle = 1
+            .FillStyle = 1
+            .ZOrder 0
+            .BackStyle = 1
+            .BackColor = colorPlayer(j)
+        End With
+    Next i
+    Next j
     
     Exit Sub
     
@@ -372,31 +446,15 @@ Private Sub Form_Resize()
             shpStart(i).Width = dx * 6.5
             shpStart(i).Height = dy * 6.5
             shpStart(i).BorderWidth = bw
+            
+            shpSpieler(i).Left = ImgLeft + dx * 8 + dx * msx(i) * 10.9 + dx
+            shpSpieler(i).Top = ImgTop + dy * 8 + dy * msy(i) * 10.9 + dy
+            shpSpieler(i).Width = dx * 6.5
+            shpSpieler(i).Height = dy * 6.5
+            shpSpieler(i).BorderWidth = bw
         End If
     Next i
     
-'    Label1.Left = 150 * dx * fx
-'    Label1.Top = 130 * dy * fx
-'    Label1.Width = 1250 * dx * fx
-'    Label1.Height = 70 * dy * fx
-'    Label1.Font.Size = Int(Label1.Width / 32) * 32 / 29
-'
-'    Label2.Left = Label1.Left
-'    Label2.Top = Label1.Top + Label1.Height
-'    Label2.Width = Label1.Width
-'    Label2.Height = Label1.Height
-'    Label2.Font.Size = Label1.Font.Size
-'
-'    Me.Font.Size = Label1.Width / 60
-'
-'
-'    picFrame.Width = ImgWidth
-'    imgFrame.Width = Width
-'
-'    Dim i%
-'    For i = 0 To 2
-'        mClipControl(i).Left = Width - 255 * (3.5 - i)
-'    Next i
     
     If Not bBitmapFound Then
         Call RePaint
